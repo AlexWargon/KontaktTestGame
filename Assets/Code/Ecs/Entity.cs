@@ -21,6 +21,11 @@ namespace Wargon.TinyEcs {
             world.RegisterEntity(this);
             created = true;
         }
+
+        public void UnLink() {
+            if(!created) return;
+            Archetype.RemoveEntity(Index);
+        }
     }
 
     public static class EntityExtensions {
@@ -48,7 +53,7 @@ namespace Wargon.TinyEcs {
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void AddTag<T>(this Entity entity) where T : class {
+        public static void Add<T>(this Entity entity) where T : class {
             var componentType = ComponentType<T>.Index;
 #if DEBUG
             if (entity.Components.ContainsKey(componentType))
@@ -72,6 +77,16 @@ namespace Wargon.TinyEcs {
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Remove(this Entity entity, int componentType) {
+#if DEBUG
+            if (!entity.Components.ContainsKey(componentType))
+                throw new KeyNotFoundException(
+                    $"Entity {entity.name} has not {ComponentType.GetType(componentType)}. It can't be removed :C");
+#endif
+            entity.Archetype.TransferRemove(in entity.Index, componentType);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Has<T>(this Entity entity) where T : class {
             return entity.Archetype.HasComponent(ComponentType<T>.Index);
         }
@@ -85,12 +100,28 @@ namespace Wargon.TinyEcs {
 #endif
             return (T)entity.Components[ComponentType<T>.Index];
         }
-
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Destroy(this Entity entity) {
-            entity.AddTag<DestroyEntity>();
+            entity.Add<DestroyEntity>();
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Add<T>(this int entity, World world) where T: class, IPureComponent {
+            world.GetEntityArchetype(entity).PureTransferAdd(in entity, ComponentType<T>.Index);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Remove<T>(this int entity, World world) where T: class, IPureComponent {
+            world.GetEntityArchetype(entity).PureTransferRemove(in entity, ComponentType<T>.Index);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Destroy(this int entity, World world) {
+            world.GetEntityArchetype(entity).RemoveEntity(entity);
         }
     }
-    
+    public interface IPureComponent { }
     public struct ComponentType<TComponent> where TComponent : class {
         public static readonly int Index;
         static ComponentType() {

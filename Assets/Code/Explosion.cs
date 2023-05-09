@@ -2,7 +2,8 @@
 using Wargon.TinyEcs;
 
 namespace TestGame {
-    public sealed class DeathEffect : MonoBehaviour {
+    [DisallowMultipleComponent]
+    public sealed class Explosion : MonoBehaviour {
         public Entity Value;
     }
 }

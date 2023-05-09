@@ -10,6 +10,7 @@ namespace Wargon.TinyEcs {
     }
     public sealed class World {
         private static World defaultWorld;
+        private int[] entityArchetypesIDs;
         private DynamicArray<Archetype> archetypesList;
         private Dictionary<int, Archetype> archetypesMap;
         internal IDependenciesContainer DependenciesContainer;
@@ -24,6 +25,7 @@ namespace Wargon.TinyEcs {
         public WorldData Data => data;
         internal int QueriesCount => queries.Count;
         private World() {
+            entityArchetypesIDs = new int[128];
             archetypesList = new DynamicArray<Archetype>(10);
             archetypesMap = new Dictionary<int, Archetype>();
             archetypesMap.Add(Archetype.Empty, Archetype.EmptyRef(this));
@@ -58,7 +60,9 @@ namespace Wargon.TinyEcs {
                 freeEntities.RemoveLast();
                 return e;
             }
+
             e = lastNewEntity;
+            SetEntityArchetypeID(e, Archetype.Empty);
             lastNewEntity++;
             return e;
         }
@@ -80,7 +84,7 @@ namespace Wargon.TinyEcs {
         public Entity GetEntity(int index) {
             return entities[index];
         }
-
+        
         internal void RegisterEntity(Entity entity) {
             entity.Archetype = archetypesMap[Archetype.Empty];
             if (entities.Length <= lastNewEntity) {
@@ -109,9 +113,15 @@ namespace Wargon.TinyEcs {
             entity.Link(this);
             return entity;
         }
-
+        public Entity SpawnEntity(Entity prefab, Vector3 position, Quaternion rotation) {
+            var entity = Object.Instantiate(prefab, position, rotation);
+            entity.world = this;
+            entity.Link(this);
+            return entity;
+        }
         public void DestroyEntity(Entity entity) {
             freeEntities.Add(entity.Index);
+            entity.UnLink();
             Object.DestroyImmediate(entity.gameObject);
         }
 
@@ -131,6 +141,17 @@ namespace Wargon.TinyEcs {
             return q;
         }
 
+        internal Archetype GetEntityArchetype(int entity) {
+            return archetypesMap[entityArchetypesIDs[entity]];
+        }
+
+        internal void SetEntityArchetypeID(int entity, int archetype) {
+            if (entityArchetypesIDs.Length <= lastNewEntity) {
+                var newLen = entity + 16;
+                Array.Resize(ref entityArchetypesIDs, newLen);
+            }
+            entityArchetypesIDs[entity] = archetype;
+        }
         internal Archetype GetOrCreateArchetype(HashSet<int> mask) {
             var id = HashCode(mask);
             if (!archetypesMap.ContainsKey(id)) {

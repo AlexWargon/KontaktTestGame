@@ -14,6 +14,8 @@ namespace TestGame {
                 .Add<EnemyAiSystem>()
                 .Add<MineExplosionSystem>()
                 .Add<MoveSystem>()
+                .Add<LifeTimeSystem>()
+                .Add<OnPlayerDeathSystem>()
                 .Add<ClearTriggersSystem>()
                 .Init();
             
@@ -30,7 +32,7 @@ namespace TestGame {
         }
     }
     
-    sealed class PlayerInputSystem : ISystem {
+    sealed class PlayerInputSystem : ISystem{
         private Query _query;
         public void OnCreate(World world) {
             _query = world.GetQuery().WithAll(typeof(InputData), typeof(PlayerTag));
@@ -68,7 +70,7 @@ namespace TestGame {
         private Query _enemies;
         private Query _players;
         public void OnCreate(World world) {
-            _enemies = world.GetQuery().WithAll(typeof(EnemyTag), typeof(InputData),typeof(Transform));
+            _enemies = world.GetQuery().WithAll(typeof(EnemyTag), typeof(InputData),typeof(Transform)).Without<Disabled>();
             _players = world.GetQuery().WithAll(typeof(Transform), typeof(PlayerTag));
         }
 
@@ -96,14 +98,31 @@ namespace TestGame {
             foreach (var entity in _query) {
                 var trigger = entity.Get<OnTriggerEnterEvent>();
                 if (trigger.Other.Has<PlayerTag>()) {
-                    // world.SpawnEntity(entity.Get<DeathEffect>().Value);
+                    world.SpawnEntity(entity.Get<Explosion>().Value, entity.Get<Transform>().position, Quaternion.identity);
                     trigger.Other.Destroy();
+                    world.CreatePureEntity().Add<PlayerDeathEvent>(world);
+                    entity.Add<Disabled>();
+                    if(entity.Has<InputData>())
+                        entity.Get<InputData>().Axises = Vector2.zero;
                     Debug.Log("BOOM");
                 }
             }
         }
     }
 
+    sealed class OnPlayerDeathSystem : ISystem {
+        private Query _query;
+        public void OnCreate(World world) {
+            _query = world.GetQuery().With<PlayerDeathEvent>();
+        }
+
+        public void OnUpdate(World world) {
+            for (var i = 0; i < _query.Count; i++) {
+                var entity = _query.GetPureEntity(i);
+                entity.Destroy(world);
+            }
+        }
+    }
     sealed class ClearTriggersSystem : ISystem {
         private Query _query;
         public void OnCreate(World world) {
@@ -119,7 +138,8 @@ namespace TestGame {
     public sealed class OnTriggerEnterEvent {
         public Entity Other;
     }
-    
+    public sealed class Disabled {}
+    public sealed class PlayerDeathEvent : IPureComponent {}
     sealed class LifeTimeSystem : ISystem {
         private Query _query;
         public void OnCreate(World world) {
@@ -132,15 +152,6 @@ namespace TestGame {
                 lifeTime.Value -= world.Data.DeltaTime;
                 if(lifeTime.Value <= 0) entity.Destroy();
             }
-        }
-    }
-
-    public interface IPool {
-        Entity Spawn(Entity prefab, Vector3 position, Quaternion rotation);
-    }
-    public class Pool : IPool {
-        public Entity Spawn(Entity prefab, Vector3 position, Quaternion rotation) {
-            throw new NotImplementedException();
         }
     }
 }

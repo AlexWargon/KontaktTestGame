@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using UnityEngine.UI;
 
 namespace Wargon.TinyEcs {
     public sealed class Archetype {
@@ -42,12 +40,14 @@ namespace Wargon.TinyEcs {
             if (Edges.TryGetValue(component, out var edge)) {
                 edge.Add.Execute(in entity);
                 world.GetEntity(entity).Archetype = edge.Add.archetypeTo;
+                world.SetEntityArchetypeID(entity, edge.Add.archetypeTo.id);
                 return;
             }
             CreateEdges(in component);
             edge = Edges[component];
             edge.Add.Execute(in entity);
             world.GetEntity(entity).Archetype = edge.Add.archetypeTo;
+            world.SetEntityArchetypeID(entity, edge.Add.archetypeTo.id);
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -55,14 +55,44 @@ namespace Wargon.TinyEcs {
             if (Edges.TryGetValue(component, out var edge)) {
                 edge.Remove.Execute(in entity);
                 world.GetEntity(entity).Archetype = edge.Remove.archetypeTo;
+                world.SetEntityArchetypeID(entity, edge.Add.archetypeTo.id);
                 return;
             }
             CreateEdges(in component);
             edge = Edges[component];
             edge.Remove.Execute(in entity);
             world.GetEntity(entity).Archetype = edge.Remove.archetypeTo;
+            world.SetEntityArchetypeID(entity, edge.Add.archetypeTo.id);
         }
 
+
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void PureTransferAdd(in int entity, in int component) {
+            if (Edges.TryGetValue(component, out var edge)) {
+                edge.Add.Execute(in entity);
+                world.SetEntityArchetypeID(entity, edge.Add.archetypeTo.id);
+                return;
+            }
+            CreateEdges(in component);
+            edge = Edges[component];
+            edge.Add.Execute(in entity);
+            world.SetEntityArchetypeID(entity, edge.Add.archetypeTo.id);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void PureTransferRemove(in int entity, in int component) {
+            if (Edges.TryGetValue(component, out var edge)) {
+                edge.Remove.Execute(in entity);
+                world.SetEntityArchetypeID(entity, edge.Add.archetypeTo.id);
+                return;
+            }
+            CreateEdges(in component);
+            edge = Edges[component];
+            edge.Remove.Execute(in entity);
+            world.SetEntityArchetypeID(entity, edge.Add.archetypeTo.id);
+        }
+        
         private void CreateEdges(in int component) {
             var maskAdd = new HashSet<int>(hashMask);
             maskAdd.Add(component);
