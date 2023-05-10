@@ -12,16 +12,17 @@ namespace Wargon.TestGame {
         [SerializeField] private Button _restartButton;
         [SerializeField] private TextMeshProUGUI _resultText;
         [SerializeField] private RectTransform _rectTransform;
-
+        [SerializeField] private World _world;
         private void Start() {
             _restartButton.onClick.AddListener(OnClickRestart);
         }
 
         private void OnClickRestart() {
-            World.Default.Destroy();
+            _world.Destroy();
             DI.GetOrCreateContainer().Clear();
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-            UIService.Hide<GameOverPopup>();
+            UIService.Hide<GameOverPopup>(() => {
+                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            });
         }
 
         public void SetTime(float time) {
@@ -39,8 +40,8 @@ namespace Wargon.TestGame {
 
         public override void PlayHideAnimation(Action callback = null) {
             StartCoroutine(
-                PuffShow(_rectTransform, 0.4f, 0f, 1.2f,
-                    PuffShow(_rectTransform, 0.1f, 1.2f, 1f, null, callback))
+                PuffShow(_rectTransform, 0.1f, 1f, 1.2f,
+                    PuffShow(_rectTransform, 0.1f, 1f, 0f, null, callback))
             );
         }
 

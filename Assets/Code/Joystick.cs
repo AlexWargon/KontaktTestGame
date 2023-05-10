@@ -27,16 +27,8 @@ namespace Wargon.TestGame {
                 pos = Vector2.ClampMagnitude(pos, _dragOffsetDistance) / _dragOffsetDistance;
 
                 _joystickHandleImage.rectTransform.anchoredPosition = pos * _dragMoveDistance;
-                // var sizeDelta = joystickBackgroundImage.rectTransform.sizeDelta;
-                // pos.x = (pos.x / sizeDelta.x);
-                // pos.y = (pos.y / sizeDelta.y);
-                //
                 _inputVector.x = Mathf.Abs(pos.x) > _dragTrashHold ? pos.x : 0;
                 _inputVector.y = Mathf.Abs(pos.y) > _dragTrashHold ? pos.y : 0;
-                //
-                // joystickHandleImage.rectTransform.anchoredPosition = new Vector3(
-                //     inputVector.x * (sizeDelta.x / 3),
-                //     inputVector.y * (sizeDelta.y / 3));
             }
         }
 

@@ -9,8 +9,8 @@ namespace Wargon.TestGame {
 
         private void Awake() {
             var di = DI.GetOrCreateContainer();
+            di.Register(World.Default);
             di.Build(this);
-            _world = World.Default;
             _world
                 .SetDI(di)
                 .Add<PlayerInputSystem>()
