@@ -9,14 +9,14 @@ namespace Wargon.TinyEcs {
         private readonly Dictionary<int, ArchetypeEdge> Edges;
         private readonly DynamicArray<Query> queries;
         private readonly World world;
-        private int _queriesCount;
+        private int queriesCount;
 
         private Archetype(World world) {
             hashMask = new HashSet<int>();
             Edges = new Dictionary<int, ArchetypeEdge>();
             queries = new DynamicArray<Query>(3);
             id = 0;
-            _queriesCount = 0;
+            queriesCount = 0;
             hashMask = new HashSet<int>();
             this.world = world;
         }
@@ -25,7 +25,7 @@ namespace Wargon.TinyEcs {
             queries = new DynamicArray<Query>(3);
             Edges = new Dictionary<int, ArchetypeEdge>();
             id = archetypeId;
-            _queriesCount = 0;
+            queriesCount = 0;
             hashMask = hashMaskSource;
             this.world = world;
             var worldQueries = world.GetAllQueries();
@@ -126,39 +126,39 @@ namespace Wargon.TinyEcs {
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void AddEntity(int entityId) {
-            for (var i = 0; i < _queriesCount; i++) queries[i].PreAddWith(entityId);
+            for (var i = 0; i < queriesCount; i++) queries[i].PreAddWith(entityId);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void RemoveEntity(int entityId) {
-            for (var i = 0; i < _queriesCount; i++) queries[i].PreRemoveWith(entityId);
+            for (var i = 0; i < queriesCount; i++) queries[i].PreRemoveWith(entityId);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void FilterQuery(Query query) {
             if (QueryMatchWithArchetype(query)) {
                 queries.Add(query);
-                _queriesCount++;
+                queriesCount++;
             }
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool QueryMatchWithArchetype(Query query) {
-            foreach (var i in query.without) {
+            foreach (var i in query.Without) {
                 if (HasComponent(i)) return false;
             }
             var checks = 0;
-            foreach (var i in query.with) {
+            foreach (var i in query.With) {
                 if (HasComponent(i)) {
                     checks++;
-                    if (checks == query.with.Count) {
+                    if (checks == query.With.Count) {
                         queries.Add(query);
-                        _queriesCount++;
+                        queriesCount++;
                         return true;
                     }
                 }
             }
 
-            foreach (var i in query.any) {
+            foreach (var i in query.Any) {
                 if(HasComponent(i))
                     return true;
             }

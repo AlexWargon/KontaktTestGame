@@ -27,6 +27,8 @@ namespace Wargon.TinyEcs {
             else {
                 updateSystems.Add(system);
             }
+
+            InjectFields(system);
         }
 
         internal void Init() {
@@ -38,8 +40,7 @@ namespace Wargon.TinyEcs {
         }
 
         private void InjectFields(ISystem system) {
-            var type = system.GetType();
-            var fields = type.GetFields();
+            world.GetDI().Build(system);
         }
 
         internal void OnUpdate(ref WorldData worldData) {
@@ -68,7 +69,7 @@ namespace Wargon.TinyEcs {
     public interface IFixed { }
     public interface ILate { }
     
-    public sealed class DestroyEntity {}
+    public sealed class DestroyEntity : IPureComponent{}
     sealed class DestroyEntitiesSystem : ISystem {
         private Query _query;
         public void OnCreate(World world) {

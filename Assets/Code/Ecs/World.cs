@@ -9,97 +9,104 @@ namespace Wargon.TinyEcs {
         public float FixedDeltaTime;
     }
     public sealed class World {
-        private static World defaultWorld;
-        private int[] entityArchetypesIDs;
-        private DynamicArray<Archetype> archetypesList;
-        private Dictionary<int, Archetype> archetypesMap;
-        internal IDependenciesContainer DependenciesContainer;
-
-        private DynamicArray<Query> dirtyQueries;
-        private Entity[] entities;
-        private readonly DynamicArray<int> freeEntities;
-        private readonly DynamicArray<Query> queries;
-        private readonly Systems systems;
-        private int lastNewEntity;
-        private WorldData data;
-        public WorldData Data => data;
-        internal int QueriesCount => queries.Count;
+        private static World _defaultWorld;
+        private int[] _entityArchetypesIDs;
+        private DynamicArray<Archetype> _archetypesList;
+        private Dictionary<int, Archetype> _archetypesMap;
+        private IDependenciesContainer _dependenciesContainer;
+        private DynamicArray<Query> _dirtyQueries;
+        private Entity[] _entities;
+        private DynamicArray<int> _freeEntities;
+        private DynamicArray<Query> _queries;
+        private Systems _systems;
+        private int _lastNewEntity;
+        private bool _alive;
+        private WorldData _data;
+        public WorldData Data => _data;
+        internal int QueriesCount => _queries.Count;
         private World() {
-            entityArchetypesIDs = new int[128];
-            archetypesList = new DynamicArray<Archetype>(10);
-            archetypesMap = new Dictionary<int, Archetype>();
-            archetypesMap.Add(Archetype.Empty, Archetype.EmptyRef(this));
-            dirtyQueries = new DynamicArray<Query>(4);
-            entities = new Entity[128];
-            freeEntities = new DynamicArray<int>(128);
-            systems = new Systems(this);
-            queries = new DynamicArray<Query>(8);
-            lastNewEntity = 0;
+            _entityArchetypesIDs = new int[128];
+            _archetypesList = new DynamicArray<Archetype>(10);
+            _archetypesMap = new Dictionary<int, Archetype>();
+            _archetypesMap.Add(Archetype.Empty, Archetype.EmptyRef(this));
+            _dirtyQueries = new DynamicArray<Query>(4);
+            _entities = new Entity[128];
+            _freeEntities = new DynamicArray<int>(128);
+            _systems = new Systems(this);
+            _queries = new DynamicArray<Query>(8);
+            _lastNewEntity = 0;
+            _alive = true;
         }
 
-        public static World Default => defaultWorld ??= new World();
-        
+        public void Destroy() {
+            _alive = false;
+            _archetypesMap.Clear();
+            _systems = null;
+            _defaultWorld = null;
+        }
+        public static World Default => _defaultWorld ??= new World();
 
         public World SetDI(IDependenciesContainer dependenciesContainer) {
-            DependenciesContainer = dependenciesContainer;
+            _dependenciesContainer = dependenciesContainer;
             return this;
         }
 
+        public IDependenciesContainer GetDI() => _dependenciesContainer;
         public void Init() {
-            systems.Init();
+            _systems.Init();
         }
 
         public DynamicArray<Query> GetAllQueries() {
-            return queries;
+            return _queries;
         }
         
         public int CreatePureEntity() {
             int e;
-            if (freeEntities.Count > 0) {
-                e = freeEntities.Last();
-                freeEntities.RemoveLast();
+            if (_freeEntities.Count > 0) {
+                e = _freeEntities.Last();
+                _freeEntities.RemoveLast();
                 return e;
             }
 
-            e = lastNewEntity;
+            e = _lastNewEntity;
             SetEntityArchetypeID(e, Archetype.Empty);
-            lastNewEntity++;
+            _lastNewEntity++;
             return e;
         }
         
         public Entity CreateEntity() {
             Entity e;
-            if (freeEntities.Count > 0) {
-                e = entities[freeEntities.Last()];
-                freeEntities.RemoveLast();
+            if (_freeEntities.Count > 0) {
+                e = _entities[_freeEntities.Last()];
+                _freeEntities.RemoveLast();
                 return e;
             }
 
-            e = new GameObject($"Entity #{lastNewEntity}").AddComponent<Entity>();
-            e.Index = lastNewEntity;
-            lastNewEntity++;
+            e = new GameObject($"Entity #{_lastNewEntity}").AddComponent<Entity>();
+            e.Index = _lastNewEntity;
+            _lastNewEntity++;
             return e;
         }
 
         public Entity GetEntity(int index) {
-            return entities[index];
+            return _entities[index];
         }
         
         internal void RegisterEntity(Entity entity) {
-            entity.Archetype = archetypesMap[Archetype.Empty];
-            if (entities.Length <= lastNewEntity) {
-                var newLen = lastNewEntity + 16;
-                Array.Resize(ref entities, newLen);
+            entity.Archetype = _archetypesMap[Archetype.Empty];
+            if (_entities.Length <= _lastNewEntity) {
+                var newLen = _lastNewEntity + 16;
+                Array.Resize(ref _entities, newLen);
             }
 
-            if (freeEntities.Count > 0) {
-                entity.Index = freeEntities.Last();
-                freeEntities.RemoveLast();
+            if (_freeEntities.Count > 0) {
+                entity.Index = _freeEntities.Last();
+                _freeEntities.RemoveLast();
             }
             else {
-                entity.Index = lastNewEntity++;
+                entity.Index = _lastNewEntity++;
             }
-            entities[entity.Index] = entity;
+            _entities[entity.Index] = entity;
             var components = entity.GetComponents<Component>();
             for (var i = 0; i < components.Length; i++) {
                 ref var c = ref components[i];
@@ -120,47 +127,47 @@ namespace Wargon.TinyEcs {
             return entity;
         }
         public void DestroyEntity(Entity entity) {
-            freeEntities.Add(entity.Index);
+            _freeEntities.Add(entity.Index);
             entity.UnLink();
             Object.DestroyImmediate(entity.gameObject);
         }
 
         internal void AddDirtyQuery(Query query) {
             if (!query.IsDirty)
-                dirtyQueries.Add(query);
+                _dirtyQueries.Add(query);
         }
 
         public void UpdateQueries() {
-            for (var i = 0; i < dirtyQueries.Count; i++) dirtyQueries.data[i].Update();
-            dirtyQueries.Clear();
+            for (var i = 0; i < _dirtyQueries.Count; i++) _dirtyQueries.data[i].Update();
+            _dirtyQueries.Clear();
         }
 
         public Query GetQuery() {
             var q = new Query(this);
-            queries.Add(q);
+            _queries.Add(q);
             return q;
         }
 
         internal Archetype GetEntityArchetype(int entity) {
-            return archetypesMap[entityArchetypesIDs[entity]];
+            return _archetypesMap[_entityArchetypesIDs[entity]];
         }
 
         internal void SetEntityArchetypeID(int entity, int archetype) {
-            if (entityArchetypesIDs.Length <= lastNewEntity) {
+            if (_entityArchetypesIDs.Length <= _lastNewEntity) {
                 var newLen = entity + 16;
-                Array.Resize(ref entityArchetypesIDs, newLen);
+                Array.Resize(ref _entityArchetypesIDs, newLen);
             }
-            entityArchetypesIDs[entity] = archetype;
+            _entityArchetypesIDs[entity] = archetype;
         }
         internal Archetype GetOrCreateArchetype(HashSet<int> mask) {
             var id = HashCode(mask);
-            if (!archetypesMap.ContainsKey(id)) {
+            if (!_archetypesMap.ContainsKey(id)) {
                 var newArchetype = new Archetype(this, mask, id);
-                archetypesMap.Add(id, newArchetype);
-                archetypesList.Add(newArchetype);
+                _archetypesMap.Add(id, newArchetype);
+                _archetypesList.Add(newArchetype);
             }
 
-            return archetypesMap[id];
+            return _archetypesMap[id];
 
             int HashCode(HashSet<int> mask) {
                 unchecked {
@@ -179,20 +186,23 @@ namespace Wargon.TinyEcs {
         }
 
         public void OnUpdate(float deltaTime) {
-            data.DeltaTime = deltaTime;
-            systems.OnUpdate(ref data);
+            if(!_alive) return;
+            _data.DeltaTime = deltaTime;
+            _systems.OnUpdate(ref _data);
         }
 
         public void OnFixedUpdate(float deltaTime) {
-            data.FixedDeltaTime = deltaTime;
-            systems.OnFixedUpdate(ref data);
+            if(!_alive) return;
+            _data.FixedDeltaTime = deltaTime;
+            _systems.OnFixedUpdate(ref _data);
         }
 
         public void OnLateUpdate() {
-            systems.OnLateUpdate(ref data);
+            if(!_alive) return;
+            _systems.OnLateUpdate(ref _data);
         }
         public World Add<TSystem>() where TSystem : class, ISystem, new() {
-            systems.Add<TSystem>();
+            _systems.Add<TSystem>();
             return this;
         }
     }

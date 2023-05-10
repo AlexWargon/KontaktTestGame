@@ -1,0 +1,16 @@
+{
+    "name": "UIFrame",
+    "rootNamespace": "",
+    "references": [
+        "GUID:52433c8c0f0bd714583b522f603b739a"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
