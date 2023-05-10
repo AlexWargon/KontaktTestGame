@@ -8,22 +8,22 @@ namespace Wargon.TinyEcs {
         public float DeltaTime;
         public float FixedDeltaTime;
     }
+
     public sealed class World {
         private static World _defaultWorld;
-        private int[] _entityArchetypesIDs;
-        private DynamicArray<Archetype> _archetypesList;
-        private Dictionary<int, Archetype> _archetypesMap;
-        private IDependenciesContainer _dependenciesContainer;
-        private DynamicArray<Query> _dirtyQueries;
-        private Entity[] _entities;
-        private DynamicArray<int> _freeEntities;
-        private DynamicArray<Query> _queries;
-        private Systems _systems;
-        private int _lastNewEntity;
         private bool _alive;
+        private readonly DynamicArray<Archetype> _archetypesList;
+        private readonly Dictionary<int, Archetype> _archetypesMap;
         private WorldData _data;
-        public WorldData Data => _data;
-        internal int QueriesCount => _queries.Count;
+        private IDependenciesContainer _dependenciesContainer;
+        private readonly DynamicArray<Query> _dirtyQueries;
+        private Entity[] _entities;
+        private int[] _entityArchetypesIDs;
+        private readonly DynamicArray<int> _freeEntities;
+        private int _lastNewEntity;
+        private readonly DynamicArray<Query> _queries;
+        private Systems _systems;
+
         private World() {
             _entityArchetypesIDs = new int[128];
             _archetypesList = new DynamicArray<Archetype>(10);
@@ -31,12 +31,16 @@ namespace Wargon.TinyEcs {
             _archetypesMap.Add(Archetype.Empty, Archetype.EmptyRef(this));
             _dirtyQueries = new DynamicArray<Query>(4);
             _entities = new Entity[128];
-            _freeEntities = new DynamicArray<int>(128);
+            _freeEntities = new DynamicArray<int>(32);
             _systems = new Systems(this);
             _queries = new DynamicArray<Query>(8);
             _lastNewEntity = 0;
             _alive = true;
         }
+
+        public WorldData Data => _data;
+        internal int QueriesCount => _queries.Count;
+        public static World Default => _defaultWorld ??= new World();
 
         public void Destroy() {
             _alive = false;
@@ -44,14 +48,16 @@ namespace Wargon.TinyEcs {
             _systems = null;
             _defaultWorld = null;
         }
-        public static World Default => _defaultWorld ??= new World();
 
         public World SetDI(IDependenciesContainer dependenciesContainer) {
             _dependenciesContainer = dependenciesContainer;
             return this;
         }
 
-        public IDependenciesContainer GetDI() => _dependenciesContainer;
+        public IDependenciesContainer GetDI() {
+            return _dependenciesContainer;
+        }
+
         public void Init() {
             _systems.Init();
         }
@@ -59,7 +65,7 @@ namespace Wargon.TinyEcs {
         public DynamicArray<Query> GetAllQueries() {
             return _queries;
         }
-        
+
         public int CreatePureEntity() {
             int e;
             if (_freeEntities.Count > 0) {
@@ -73,7 +79,7 @@ namespace Wargon.TinyEcs {
             _lastNewEntity++;
             return e;
         }
-        
+
         public Entity CreateEntity() {
             Entity e;
             if (_freeEntities.Count > 0) {
@@ -91,7 +97,7 @@ namespace Wargon.TinyEcs {
         public Entity GetEntity(int index) {
             return _entities[index];
         }
-        
+
         internal void RegisterEntity(Entity entity) {
             entity.Archetype = _archetypesMap[Archetype.Empty];
             if (_entities.Length <= _lastNewEntity) {
@@ -103,9 +109,9 @@ namespace Wargon.TinyEcs {
                 entity.Index = _freeEntities.Last();
                 _freeEntities.RemoveLast();
             }
-            else {
+            else
                 entity.Index = _lastNewEntity++;
-            }
+
             _entities[entity.Index] = entity;
             var components = entity.GetComponents<Component>();
             for (var i = 0; i < components.Length; i++) {
@@ -120,12 +126,14 @@ namespace Wargon.TinyEcs {
             entity.Link(this);
             return entity;
         }
+
         public Entity SpawnEntity(Entity prefab, Vector3 position, Quaternion rotation) {
             var entity = Object.Instantiate(prefab, position, rotation);
             entity.world = this;
             entity.Link(this);
             return entity;
         }
+
         public void DestroyEntity(Entity entity) {
             _freeEntities.Add(entity.Index);
             entity.UnLink();
@@ -157,8 +165,10 @@ namespace Wargon.TinyEcs {
                 var newLen = entity + 16;
                 Array.Resize(ref _entityArchetypesIDs, newLen);
             }
+
             _entityArchetypesIDs[entity] = archetype;
         }
+
         internal Archetype GetOrCreateArchetype(HashSet<int> mask) {
             var id = HashCode(mask);
             if (!_archetypesMap.ContainsKey(id)) {
@@ -186,21 +196,22 @@ namespace Wargon.TinyEcs {
         }
 
         public void OnUpdate(float deltaTime) {
-            if(!_alive) return;
+            if (!_alive) return;
             _data.DeltaTime = deltaTime;
             _systems.OnUpdate(ref _data);
         }
 
         public void OnFixedUpdate(float deltaTime) {
-            if(!_alive) return;
+            if (!_alive) return;
             _data.FixedDeltaTime = deltaTime;
             _systems.OnFixedUpdate(ref _data);
         }
 
         public void OnLateUpdate() {
-            if(!_alive) return;
+            if (!_alive) return;
             _systems.OnLateUpdate(ref _data);
         }
+
         public World Add<TSystem>() where TSystem : class, ISystem, new() {
             _systems.Add<TSystem>();
             return this;

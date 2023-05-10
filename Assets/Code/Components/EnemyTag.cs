@@ -1,5 +1,5 @@
 ﻿using UnityEngine;
 
-namespace TestGame {
+namespace Wargon.TestGame {
     public sealed class EnemyTag : MonoBehaviour { }
 }

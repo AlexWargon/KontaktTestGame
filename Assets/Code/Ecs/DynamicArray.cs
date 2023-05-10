@@ -2,9 +2,10 @@ using System;
 
 namespace Wargon.TinyEcs {
     public sealed class DynamicArray<T> {
-        public T[] data;
         public int Count;
+        public T[] data;
         public int Len;
+
         public DynamicArray(int size) {
             Count = 0;
             Len = size;

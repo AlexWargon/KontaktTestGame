@@ -1,5 +1,5 @@
 using Wargon.TinyEcs;
 
-namespace TestGame {
-    public sealed class PlayerDeathEvent : IPureComponent {}
+namespace Wargon.TestGame {
+    public sealed class PlayerDeathEvent : IPureComponent { }
 }

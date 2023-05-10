@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 
-namespace TestGame {
+namespace Wargon.TestGame {
     public sealed class InputData : MonoBehaviour {
-        public Vector2 Axises;
+        public Vector2 Axis;
     }
 }

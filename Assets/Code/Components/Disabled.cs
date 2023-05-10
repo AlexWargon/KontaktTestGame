@@ -1,3 +1,3 @@
-namespace TestGame {
-    public sealed class Disabled {}
+namespace Wargon.TestGame {
+    public sealed class Disabled { }
 }

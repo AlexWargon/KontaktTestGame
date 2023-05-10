@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace TestGame {
+namespace Wargon.TestGame {
     public sealed class LifeTime : MonoBehaviour {
         public float Value;
     }

@@ -4,23 +4,17 @@ using System.Runtime.CompilerServices;
 
 namespace Wargon.TinyEcs {
     public class Query : IEquatable<Query> {
-        private int _count;
-
-        public int Count {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _count;
-        }
+        private readonly int _index;
+        private readonly World _world;
+        internal readonly HashSet<int> Any;
+        internal readonly HashSet<int> With;
+        internal readonly HashSet<int> Without;
         private int[] _entities;
         private int[] _entityMap;
         private int _entityToUpdateCount;
         private EntityToUpdate[] _entityToUpdates;
-        private readonly int _index;
         internal bool IsDirty;
-        internal readonly HashSet<int> With;
-        internal readonly HashSet<int> Without;
-        internal readonly HashSet<int> Any;
-        private readonly World _world;
-        
+
         public Query(World world) {
             _world = world;
             _entities = new int[32];
@@ -30,16 +24,18 @@ namespace Wargon.TinyEcs {
             Any = new HashSet<int>();
             _entityToUpdates = new EntityToUpdate[32];
             _index = world.QueriesCount;
-            _count = 0;
+            Count = 0;
         }
 
-        public int FullSize {
-            get => _entities.Length;
+        public int Count {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get;
+            private set;
         }
 
-        public bool IsEmpty {
-            get => _count == 0;
-        }
+        public int FullSize => _entities.Length;
+
+        public bool IsEmpty => Count == 0;
 
         public bool Equals(Query other) {
             return other._index == _index;
@@ -74,29 +70,26 @@ namespace Wargon.TinyEcs {
         public int GetPureEntity(int index) {
             return _entities[index];
         }
+
         private void Remove(int entity) {
             if (!Has(entity)) return;
             var index = _entityMap[entity] - 1;
             _entityMap[entity] = 0;
-            _count--;
-            if (_count > index) {
-                _entities[index] = _entities[_count];
+            Count--;
+            if (Count > index) {
+                _entities[index] = _entities[Count];
                 _entityMap[_entities[index]] = index + 1;
             }
         }
 
         private void Add(int entity) {
-            if (_entities.Length - 1 <= _count) {
-                Array.Resize(ref _entities, _count + 16);
-            }
+            if (_entities.Length - 1 <= Count) Array.Resize(ref _entities, Count + 16);
 
-            if (_entityMap.Length - 1 <= entity) {
-                Array.Resize(ref _entityMap, entity + 16);
-            }
+            if (_entityMap.Length - 1 <= entity) Array.Resize(ref _entityMap, entity + 16);
 
             if (Has(entity)) return;
-            _entities[_count++] = entity;
-            _entityMap[entity] = _count;
+            _entities[Count++] = entity;
+            _entityMap[entity] = Count;
         }
 
         internal void Update() {
@@ -142,32 +135,26 @@ namespace Wargon.TinyEcs {
 
             public bool MoveNext() {
                 index++;
-                return index < query._count;
+                return index < query.Count;
             }
 
             public void Reset() {
                 index = -1;
             }
 
-            public Entity Current {
-                get => query.GetEntity(index);
-            }
+            public Entity Current => query.GetEntity(index);
         }
     }
 
     public static class QueryExtensions {
         public static Query WithAll(this Query query, params Type[] types) {
-            foreach (var type in types) {
-                query.With.Add(ComponentType.GetIndex(type));
-            }
+            foreach (var type in types) query.With.Add(ComponentType.GetIndex(type));
 
             return query;
         }
 
         public static Query WithAny(this Query query, params Type[] types) {
-            foreach (var type in types) {
-                query.Any.Add(ComponentType.GetIndex(type));
-            }
+            foreach (var type in types) query.Any.Add(ComponentType.GetIndex(type));
 
             return query;
         }

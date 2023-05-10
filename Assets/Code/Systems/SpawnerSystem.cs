@@ -1,9 +1,10 @@
 using UnityEngine;
 using Wargon.TinyEcs;
 
-namespace TestGame {
-    sealed class SpawnerSystem : ISystem {
+namespace Wargon.TestGame {
+    internal sealed class SpawnerSystem : ISystem {
         private Query _query;
+
         public void OnCreate(World world) {
             _query = world.GetQuery().With<CubeSpawner>();
         }

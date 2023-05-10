@@ -7,7 +7,7 @@ using UnityEngine.UI;
 using Wargon.TinyEcs;
 using Wargon.UI;
 
-namespace TestGame {
+namespace Wargon.TestGame {
     public class GameOverPopup : Popup {
         [SerializeField] private Button _restartButton;
         [SerializeField] private TextMeshProUGUI _resultText;
@@ -33,20 +33,19 @@ namespace TestGame {
         public override void PlayShowAnimation(Action callback = null) {
             StartCoroutine(
                 PuffShow(_rectTransform, 0.4f, 0f, 1.2f,
-                PuffShow(_rectTransform, 0.1f, 1.2f, 1f, null, callback))
+                    PuffShow(_rectTransform, 0.1f, 1.2f, 1f, null, callback))
             );
         }
-        
+
         public override void PlayHideAnimation(Action callback = null) {
             StartCoroutine(
-                routine: PuffShow(_rectTransform, 0.4f, 0f, 1.2f, 
-                routineOnEnd: PuffShow(_rectTransform, 0.1f, 1.2f, 1f, null, callback))
+                PuffShow(_rectTransform, 0.4f, 0f, 1.2f,
+                    PuffShow(_rectTransform, 0.1f, 1.2f, 1f, null, callback))
             );
         }
-        
+
         private IEnumerator PuffShow(RectTransform rectTransform, float duration, float startScale, float endScale,
             IEnumerator routineOnEnd = null, Action callback = null) {
-            
             var startScaleV = new Vector3(startScale, startScale, 0);
             var baseScale = rectTransform.localScale;
             var t = 0f;

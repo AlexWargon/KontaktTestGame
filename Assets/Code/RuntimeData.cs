@@ -1,10 +1,9 @@
-using Wargon.TinyEcs;
+using System;
 
-namespace TestGame {
-    [System.Serializable]
+namespace Wargon.TestGame {
+    [Serializable]
     public class RuntimeData {
         public float SesionTime;
-        public Entity PlayerEntity;
-        public Entity SpawnEffect;
+        public bool GameOver;
     }
 }

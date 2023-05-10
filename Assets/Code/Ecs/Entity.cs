@@ -8,14 +8,15 @@ namespace Wargon.TinyEcs {
         public int Index;
         internal Archetype Archetype;
         internal Dictionary<int, object> Components;
-        internal World world;
         private bool created;
+        internal World world;
+
         private void Start() {
             Link(World.Default);
         }
 
         public void Link(World worldRef) {
-            if(created) return;
+            if (created) return;
             Components = new Dictionary<int, object>();
             world = worldRef;
             world.RegisterEntity(this);
@@ -23,7 +24,7 @@ namespace Wargon.TinyEcs {
         }
 
         public void UnLink() {
-            if(!created) return;
+            if (!created) return;
             Archetype.RemoveEntity(Index);
         }
     }
@@ -31,23 +32,17 @@ namespace Wargon.TinyEcs {
     public static class EntityExtensions {
         public static void AddBoxed(this Entity entity, object component) {
             var componentType = ComponentType.GetIndex(component.GetType());
-#if DEBUG
             if (entity.Components.ContainsKey(componentType))
-                throw new KeyNotFoundException(
-                    $"Entity {entity.name} already has {ComponentType.GetType(componentType)}. It can't be added :C");
-#endif
+                return;
             entity.Components.Add(componentType, component);
             entity.Archetype.TransferAdd(in entity.Index, componentType);
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Add<T>(this Entity entity, T component) where T : class {
             var componentType = ComponentType<T>.Index;
-#if DEBUG
             if (entity.Components.ContainsKey(componentType))
-                throw new KeyNotFoundException(
-                    $"Entity {entity.name} already has {ComponentType.GetType(componentType)}. It can't be added :C");
-#endif
+                return;
             entity.Components.Add(componentType, component);
             entity.Archetype.TransferAdd(in entity.Index, componentType);
         }
@@ -55,37 +50,28 @@ namespace Wargon.TinyEcs {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Add<T>(this Entity entity) where T : class {
             var componentType = ComponentType<T>.Index;
-#if DEBUG
             if (entity.Components.ContainsKey(componentType))
-                throw new KeyNotFoundException(
-                    $"Entity {entity.name} already has {ComponentType.GetType(componentType)}. It can't be added :C");
-#endif
+                return;
             entity.Components.Add(componentType, default);
             entity.Archetype.TransferAdd(in entity.Index, componentType);
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Remove<T>(this Entity entity) where T : class {
             var componentType = ComponentType<T>.Index;
-#if DEBUG
             if (!entity.Components.ContainsKey(componentType))
-                throw new KeyNotFoundException(
-                    $"Entity {entity.name} has not {ComponentType.GetType(componentType)}. It can't be removed :C");
-#endif
+                return;
             entity.Components.Remove(componentType);
             entity.Archetype.TransferRemove(in entity.Index, componentType);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Remove(this Entity entity, int componentType) {
-#if DEBUG
             if (!entity.Components.ContainsKey(componentType))
-                throw new KeyNotFoundException(
-                    $"Entity {entity.name} has not {ComponentType.GetType(componentType)}. It can't be removed :C");
-#endif
+                return;
             entity.Archetype.TransferRemove(in entity.Index, componentType);
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Has<T>(this Entity entity) where T : class {
             return entity.Archetype.HasComponent(ComponentType<T>.Index);
@@ -93,37 +79,40 @@ namespace Wargon.TinyEcs {
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Get<T>(this Entity entity) where T : class {
-#if DEBUG
+
             if (!entity.Components.ContainsKey(ComponentType<T>.Index))
                 throw new KeyNotFoundException(
                     $"Entity {entity.name} has not {ComponentType.GetType(ComponentType<T>.Index)}. It can't be geted :C");
-#endif
+
             return (T)entity.Components[ComponentType<T>.Index];
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Destroy(this Entity entity) {
             entity.Add<DestroyEntity>();
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Add<T>(this int entity, World world) where T: class, IPureComponent {
+        public static void Add<T>(this int entity, World world) where T : class, IPureComponent {
             world.GetEntityArchetype(entity).PureTransferAdd(in entity, ComponentType<T>.Index);
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Remove<T>(this int entity, World world) where T: class, IPureComponent {
+        public static void Remove<T>(this int entity, World world) where T : class, IPureComponent {
             world.GetEntityArchetype(entity).PureTransferRemove(in entity, ComponentType<T>.Index);
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Destroy(this int entity, World world) {
             world.GetEntityArchetype(entity).RemoveEntity(entity);
         }
     }
+
     public interface IPureComponent { }
+
     public struct ComponentType<TComponent> where TComponent : class {
         public static readonly int Index;
+
         static ComponentType() {
             Index = ComponentType.GetIndex<TComponent>();
         }
@@ -138,6 +127,7 @@ namespace Wargon.TinyEcs {
             indexByType = new Dictionary<Type, int>();
             typeByIndex = new Dictionary<int, Type>();
         }
+
         private static void Add<TComponent>() {
             var index = Count++;
             indexByType.Add(typeof(TComponent), index);
@@ -149,18 +139,21 @@ namespace Wargon.TinyEcs {
             indexByType.Add(type, index);
             typeByIndex.Add(index, type);
         }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetIndex<TComponet>() where TComponet : class {
             if (indexByType.TryGetValue(typeof(TComponet), out var idx)) return idx;
             Add<TComponet>();
             return indexByType[typeof(TComponet)];
         }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetIndex(Type type) {
             if (indexByType.TryGetValue(type, out var idx)) return idx;
             Add(type);
             return indexByType[type];
         }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Type GetType(int index) {
             return typeByIndex[index];

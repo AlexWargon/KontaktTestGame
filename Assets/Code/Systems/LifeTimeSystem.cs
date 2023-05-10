@@ -1,8 +1,9 @@
 using Wargon.TinyEcs;
 
-namespace TestGame {
-    sealed class LifeTimeSystem : ISystem {
+namespace Wargon.TestGame {
+    internal sealed class LifeTimeSystem : ISystem {
         private Query _query;
+
         public void OnCreate(World world) {
             _query = world.GetQuery().With<LifeTime>();
         }
@@ -11,7 +12,7 @@ namespace TestGame {
             foreach (var entity in _query) {
                 var lifeTime = entity.Get<LifeTime>();
                 lifeTime.Value -= world.Data.DeltaTime;
-                if(lifeTime.Value <= 0) entity.Destroy();
+                if (lifeTime.Value <= 0) entity.Destroy();
             }
         }
     }

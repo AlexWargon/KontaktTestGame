@@ -1,7 +1,7 @@
 using UnityEngine;
 using Wargon.TinyEcs;
 
-namespace TestGame {
+namespace Wargon.TestGame {
     public sealed class CubeSpawner : MonoBehaviour {
         public float Delay;
         public float DelayLeft;
